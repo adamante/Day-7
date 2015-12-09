@@ -15,12 +15,17 @@ namespace Day7
             var targetWire = "a";
             var overridedWire = "b";
 
-            var firstResult = Day7.SolvePart1(ref input, targetWire);
+            var parsedInput = Day7.ParseInput(ref input);
+
+            var firstResult = Day7.Solve(ref parsedInput, targetWire);
             Console.WriteLine("Signal on {0}: {1}", targetWire, firstResult);
 
-            var secondResult = Day7.SolvePart2(ref input, targetWire, overridedWire, firstResult);
+            //Overriding input
+            parsedInput.Parameters[overridedWire] = new[] { firstResult.ToString() };
 
+            var secondResult = Day7.Solve(ref parsedInput, targetWire);
             Console.WriteLine("Signal on {0} after overriding {1}: {2}", targetWire, overridedWire, secondResult);
+
             Console.ReadKey();
         }
     }

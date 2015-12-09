@@ -9,6 +9,12 @@ using GateFunction = System.Func<ushort[], ushort>;
 
 namespace Day7
 {
+    public class PreparedInput
+    {
+        public Dictionary<string, GateFunction> Wires { get; set; }
+        public Dictionary<string, string[]> Parameters { get; set; }
+    }
+
     static class Day7
     {
         private static ushort And(params ushort[] operands)
@@ -54,11 +60,11 @@ namespace Day7
             return (ushort)operands[0];
         }
 
-        public static ushort SolvePart1(ref string[] input, string targetWire)
+        public static PreparedInput ParseInput(ref string[] input)
         {
             var wires = new Dictionary<string, GateFunction>();
             var parameters = new Dictionary<string, string[]>();
-            var computed = new Dictionary<string, ushort>();
+            
 
             var delimiters = new[] { ' ', '-', '>' };
 
@@ -111,107 +117,17 @@ namespace Day7
                 }
             }
 
-            bool finished = false;
-
-            while (!finished)
-            {
-                foreach (var wire in wires)
-                {
-                    var operands = parameters[wire.Key];
-
-                    var array = new ushort[operands.Length];
-                    bool error = false;
-
-                    for (int i = 0; i < operands.Length; i++)
-                    {
-                        if (computed.ContainsKey(operands[i]))
-                            array[i] = computed[operands[i]];
-                        else if (!ushort.TryParse(operands[i], out array[i]))
-                        {
-                            error = true;
-                            break;
-                        }
-                    }
-
-                    if (error) continue;
-
-                    var value = wire.Value.Invoke(array);
-
-                    // Uncomment if you want to see the progress
-                    //Console.WriteLine("Computed: {0} ({1}({2}) -> {3}", wire.Key, wire.Value.Method.Name, string.Join(",", array), value);
-
-                    if (!computed.ContainsKey(wire.Key))
-                        computed.Add(wire.Key, value);
-                    else
-                        computed[wire.Key] = value;
-                }
-
-                if (computed.ContainsKey(targetWire))
-                    finished = true;
-            }
-
-            return computed[targetWire];
+            return new PreparedInput() { Wires = wires, Parameters = parameters };
         }
-        public static ushort SolvePart2(ref string[] input, string targetWire, string overridedWire, ushort firstResult)
+        public static ushort Solve(ref PreparedInput input, string targetWire)
         {
-            var wires = new Dictionary<string, GateFunction>();
-            var parameters = new Dictionary<string, string[]>();
+            var wires = input.Wires;
+            var parameters = input.Parameters;
+
+            if (wires == null || parameters == null)
+                throw new ArgumentNullException("wires or parameters");
+
             var computed = new Dictionary<string, ushort>();
-
-            var delimiters = new[] { ' ', '-', '>' };
-
-            foreach (var line in input)
-            {
-                var parts = line.Split(delimiters, StringSplitOptions.RemoveEmptyEntries);
-                var key = parts.Last();
-
-                // Overriding
-                if (key == overridedWire)
-                    parts[0] = firstResult.ToString();
-
-                if (parts.Length == 2)
-                {
-                    //Assignment
-                    wires.Add(key, new GateFunction(Number));
-                    parameters.Add(key, new[] { parts[0] });
-                }
-                else if (parts.Length == 3)
-                {
-                    //Unary operator
-                    wires.Add(key, new GateFunction(Not));
-                    parameters.Add(key, new[] { parts[1] });
-                }
-                else if (parts.Length == 4)
-                {
-                    //Binary operator
-                    Func<ushort[], ushort> func = null;
-
-                    switch (parts[1])
-                    {
-                        case "AND":
-                            func = new GateFunction(And);
-                            break;
-                        case "OR":
-                            func = new GateFunction(Or);
-                            break;
-                        case "LSHIFT":
-                            func = new GateFunction(LeftShift);
-                            break;
-                        case "RSHIFT":
-                            func = new GateFunction(RightShift);
-                            break;
-                        default:
-                            throw new Exception("Unexpected operator: " + parts[1]);
-                    }
-
-                    wires.Add(key, func);
-                    parameters.Add(key, new[] { parts[0], parts[2] });
-                }
-                else
-                {
-                    throw new Exception("Unexpected input: " + line);
-                }
-            }
 
             bool finished = false;
 
